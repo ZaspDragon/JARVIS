@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { detectIntent, shouldSearchPersonalData } from "@/lib/jarvis/intent-router";
+import { buildOrchestrationPlan, createAssistantSummary } from "@/lib/jarvis/orchestrator";
 
 const RequestSchema = z.object({
   message: z.string().trim().min(1).max(12000),
@@ -18,13 +18,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const intent = detectIntent(parsed.data.message);
+  const plan = buildOrchestrationPlan(parsed.data.message);
 
   return NextResponse.json({
-    status: "accepted",
-    intent,
-    needsPersonalContext: shouldSearchPersonalData(intent),
-    executionMode: "read_only",
-    next: "Connect the model orchestrator, Supabase conversation storage and approved tool adapters."
+    status: plan.executionMode === "approval_required" ? "awaiting_preparation" : "accepted",
+    conversationId: parsed.data.conversationId ?? crypto.randomUUID(),
+    response: createAssistantSummary(parsed.data.message, plan),
+    plan,
+    memory: {
+      persistence: "pending_supabase_configuration",
+      scopes: ["private", "household", "work", "business", "hobby"]
+    },
+    approval: plan.executionMode === "approval_required"
+      ? { required: true, state: "not_yet_prepared", message: "JARVIS must present an immutable action card before execution." }
+      : { required: false }
   });
 }
