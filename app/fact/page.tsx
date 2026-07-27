@@ -1,0 +1,3 @@
+import { Suspense } from 'react';
+import JarvisLayer from '@/components/JarvisLayer';
+export default function Page(){return <Suspense><JarvisLayer name="Fact" accent="#58f6ff" description="A research and verification layer that browses current information, compares sources, explains uncertainty and separates facts from assumptions." tools={["Live Web Research","Source Comparison","Claim Verification","Document Reader","Confidence Engine","Citation Builder"]} examples={["Verify this claim using current sources","Explain this document in plain language","Compare the strongest evidence on this topic"]}/></Suspense>}
