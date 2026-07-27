@@ -1,0 +1,17 @@
+.brain-stage{isolation:isolate!important;min-height:390px!important;perspective:900px!important;background:radial-gradient(circle at 50% 48%,rgba(31,203,255,.12),transparent 38%)!important}
+.brain-stage::before{content:"";position:absolute;z-index:3;width:min(390px,88%);aspect-ratio:1;background:url('/jarvis-neural-core.svg') center/contain no-repeat;filter:drop-shadow(0 0 16px rgba(68,229,255,.7)) drop-shadow(0 0 40px rgba(25,134,255,.28));animation:neuralFloat 4.8s ease-in-out infinite,neuralPulse 3s ease-in-out infinite;pointer-events:none}
+.brain-stage::after{content:"";position:absolute;z-index:2;width:min(430px,94%);aspect-ratio:1;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 8%,rgba(82,238,255,.22) 9% 10%,transparent 11% 23%,rgba(107,99,255,.18) 24% 25%,transparent 26% 42%,rgba(82,238,255,.18) 43% 44%,transparent 45% 68%,rgba(93,255,179,.15) 69% 70%,transparent 71%);mask:radial-gradient(circle,transparent 54%,#000 55% 56%,transparent 57% 68%,#000 69% 70%,transparent 71%);animation:coreSweep 18s linear infinite;pointer-events:none}
+.brain-svg{opacity:0!important;visibility:hidden!important}
+.brain-stage .orbit{z-index:1!important;border-color:rgba(78,232,255,.24)!important;box-shadow:0 0 34px rgba(66,220,255,.09),inset 0 0 24px rgba(66,220,255,.04)!important}
+.brain-stage .o1{width:360px!important;height:360px!important;animation:coreSweep 24s linear infinite!important}
+.brain-stage .o2{width:305px!important;height:305px!important;transform:rotateX(68deg) rotateZ(8deg)!important;animation:coreSweepReverse 16s linear infinite!important}
+.brain-stage .o3{width:245px!important;height:245px!important;transform:rotateY(68deg) rotateZ(-16deg)!important;animation:coreSweep 12s linear infinite!important}
+.brain-stage .holo-base{z-index:4!important;bottom:14px!important;width:250px!important;height:72px!important;box-shadow:0 0 48px rgba(54,221,255,.42),inset 0 0 34px rgba(54,221,255,.22)!important;animation:baseBreath 2.8s ease-in-out infinite}
+.brain-stage .core-tag{z-index:5!important;bottom:-1px!important;padding:5px 10px;border:1px solid rgba(82,237,255,.2);border-radius:999px;background:rgba(2,12,19,.72);backdrop-filter:blur(8px)}
+@keyframes neuralFloat{0%,100%{transform:translateY(0) rotateY(-2deg)}50%{transform:translateY(-10px) rotateY(3deg)}}
+@keyframes neuralPulse{0%,100%{opacity:.9}50%{opacity:1;filter:drop-shadow(0 0 22px rgba(110,247,255,.92)) drop-shadow(0 0 58px rgba(27,134,255,.42))}}
+@keyframes coreSweep{to{transform:rotate(360deg)}}
+@keyframes coreSweepReverse{to{transform:rotate(-360deg)}}
+@keyframes baseBreath{0%,100%{opacity:.72;transform:perspective(350px) rotateX(68deg) scale(1)}50%{opacity:1;transform:perspective(350px) rotateX(68deg) scale(1.06)}}
+@media(max-width:700px){.brain-stage{min-height:320px!important}.brain-stage::before{width:285px}.brain-stage::after{width:315px}.brain-stage .o1{width:300px!important;height:300px!important}.brain-stage .o2{width:255px!important;height:255px!important}.brain-stage .o3{width:205px!important;height:205px!important}.brain-stage .holo-base{width:205px!important;height:60px!important}}
+@media(prefers-reduced-motion:reduce){.brain-stage::before,.brain-stage::after,.brain-stage .orbit,.brain-stage .holo-base{animation:none!important}}
