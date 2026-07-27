@@ -1,74 +1,69 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from "react";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-const divisions = [
-  ["01", "JARVIS Business", "Business ideas, operations, revenue opportunities, costs, customers and approval-ready execution."],
-  ["02", "JARVIS Home", "Recipes, meal plans, grocery prices, coupons, routines, bills, errands and family schedules."],
-  ["03", "JARVIS Work", "Warehouse reports, productivity reconciliation, missing credit, variances, downtime and app health."],
-  ["04", "JARVIS Hobby", "Trading research, safe fitness goals, technology, collecting, creative projects and learning."],
-  ["05", "JARVIS Fact", "Live research, source comparison, claim verification and evidence-backed answers."]
-];
+const categories = [
+  { key:'business', title:'JARVIS Business', hint:'Projects, customers, revenue, costs and growth', color:'#4da3ff' },
+  { key:'home', title:'JARVIS Home', hint:'Meals, groceries, bills, family and routines', color:'#56e27a' },
+  { key:'work', title:'JARVIS Work', hint:'Warehouse reports, productivity and operations', color:'#ffb347' },
+  { key:'hobby', title:'JARVIS Hobby', hint:'Trading, fitness, technology and learning', color:'#b883ff' },
+  { key:'fact', title:'JARVIS Fact', hint:'Research, verification, sources and explanations', color:'#58f6ff' }
+] as const;
 
-const neuralPoints = [[50,14],[34,22],[66,22],[22,36],[43,36],[57,36],[78,36],[16,53],[34,53],[50,50],[66,53],[84,53],[24,70],[43,68],[57,68],[76,70],[36,84],[64,84]];
-const neuralLinks = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[3,8],[4,8],[4,9],[5,9],[5,10],[6,10],[6,11],[7,12],[8,12],[8,13],[9,13],[9,14],[10,14],[10,15],[11,15],[12,16],[13,16],[13,17],[14,17],[15,17],[4,5],[8,9],[9,10],[13,14]];
-
-type View = "command" | "approvals" | "tasks" | "memory";
-type Result = { division: string; intent: string; mode: string; tools: string[]; message: string };
-
-function NeuralCore() {
-  return <div className="neural-stage" aria-hidden="true"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="orbit orbit-three"/><div className="brain-shell"><svg className="brain-map" viewBox="0 0 100 100"><defs><filter id="glow"><feGaussianBlur stdDeviation="1.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="circuitGradient"><stop offset="0" stopColor="#41f4ff"/><stop offset=".5" stopColor="#a970ff"/><stop offset="1" stopColor="#5dffb3"/></linearGradient></defs><path className="brain-outline" d="M49 9C37 7 29 13 26 22c-10 1-16 8-16 18 0 6 3 11 8 14-2 11 5 19 14 21 2 10 8 16 17 16V9Zm2 0c12-2 20 4 23 13 10 1 16 8 16 18 0 6-3 11-8 14 2 11-5 19-14 21-2 10-8 16-17 16V9Z"/>{neuralLinks.map(([a,b],i)=><line key={i} className="neural-link" x1={neuralPoints[a][0]} y1={neuralPoints[a][1]} x2={neuralPoints[b][0]} y2={neuralPoints[b][1]}/>) }{neuralPoints.map(([x,y],i)=><g key={i} className="neural-node"><circle className="node-halo" cx={x} cy={y} r="3.1"/><circle className="node-core" cx={x} cy={y} r="1.15"/></g>)}</svg><div className="core-label"><span>NEURAL CORE</span><strong>ONLINE</strong></div></div><div className="data-chip chip-one">MEMORY<br/><strong>SCOPED</strong></div><div className="data-chip chip-two">APPROVAL<br/><strong>REQUIRED</strong></div><div className="data-chip chip-three">SYSTEM<br/><strong>STABLE</strong></div></div>;
+function classify(input:string){
+  const q=input.toLowerCase();
+  if(/warehouse|employee|cycle count|putaway|inventory|production|supervisor|work/.test(q)) return 'work';
+  if(/recipe|dinner|meal|grocery|coupon|bill|family|calendar|home|house/.test(q)) return 'home';
+  if(/trade|spy|market|fitness|workout|game|collect|hobby|learn/.test(q)) return 'hobby';
+  if(/business|customer|revenue|profit|company|proposal|project/.test(q)) return 'business';
+  return 'fact';
 }
 
-function localPlan(message: string): Result {
-  const q = message.toLowerCase();
-  const division = /warehouse|employee|cycle count|putaway|work/.test(q) ? "JARVIS Work" : /recipe|dinner|grocery|coupon|home|bill/.test(q) ? "JARVIS Home" : /trade|spy|market|fitness|hobby/.test(q) ? "JARVIS Hobby" : /business|revenue|customer|profit/.test(q) ? "JARVIS Business" : "JARVIS Fact";
-  const consequential = /buy|purchase|send|email|deploy|merge|delete|trade|order|change|cancel|close/.test(q);
-  return { division, intent: consequential ? "prepare_action" : "research_and_answer", mode: consequential ? "approval_required" : "read_only", tools: division === "JARVIS Work" ? ["documents","warehouse"] : division === "JARVIS Home" ? ["web_research","calendar"] : division === "JARVIS Hobby" ? ["web_research","trading_observer"] : ["web_research"], message: consequential ? "I can investigate and prepare this action. Nothing consequential will happen until you approve the exact proposal." : "Request classified and ready for the connected JARVIS specialist workflow." };
-}
+export default function HomePage(){
+  const router=useRouter();
+  const [text,setText]=useState('');
+  const [listening,setListening]=useState(false);
+  const [detected,setDetected]=useState('');
 
-export default function HomePage() {
-  const [view,setView] = useState<View>("command");
-  const [question,setQuestion] = useState("");
-  const [result,setResult] = useState<Result|null>(null);
-  const [loading,setLoading] = useState(false);
-  const approvals = useMemo(()=>result?.mode === "approval_required" ? 1 : 0,[result]);
-
-  async function submit(event?: FormEvent) {
-    event?.preventDefault();
-    if (!question.trim()) return;
-    setLoading(true);
-    try {
-      const response = await fetch("/api/jarvis", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({message:question}) });
-      if (!response.ok) throw new Error("API unavailable");
-      const data = await response.json();
-      setResult({ division:data.plan?.division ?? data.intent?.category ?? "JARVIS Fact", intent:data.plan?.intent ?? data.intent?.name ?? "request", mode:data.plan?.executionMode ?? data.executionMode ?? "read_only", tools:data.plan?.tools?.map((tool:{name:string})=>tool.name) ?? [], message:data.plan?.summary ?? "JARVIS has prepared the request." });
-    } catch {
-      setResult(localPlan(question));
-    } finally { setLoading(false); }
+  function routeCommand(command:string){
+    const value=command.trim();
+    if(!value) return;
+    const category=classify(value);
+    setDetected(category);
+    sessionStorage.setItem('jarvis:lastCommand',value);
+    setTimeout(()=>router.push(`/${category}/?q=${encodeURIComponent(value)}`),450);
   }
 
-  return <main className="shell"><div className="circuit-field" aria-hidden="true"/><nav className="topbar"><div className="brand-mark"><span className="brand-orb"/> JARVIS</div><div className="system-pill"><span/> SYSTEM ONLINE</div></nav>
-    <div className="workspace-tabs" role="navigation">{(["command","approvals","tasks","memory"] as View[]).map(item=><button key={item} className={view===item?"active":""} onClick={()=>setView(item)}>{item.toUpperCase()}{item==="approvals"&&approvals>0?` ${approvals}`:""}</button>)}</div>
+  function startVoice(){
+    const w=window as typeof window & { webkitSpeechRecognition?: new()=>any; SpeechRecognition?: new()=>any };
+    const Recognition=w.SpeechRecognition||w.webkitSpeechRecognition;
+    if(!Recognition){ alert('Voice recognition is not available in this browser yet. Type your request instead.'); return; }
+    const recognition=new Recognition();
+    recognition.lang='en-US'; recognition.interimResults=false; recognition.continuous=false;
+    recognition.onstart=()=>setListening(true);
+    recognition.onend=()=>setListening(false);
+    recognition.onerror=()=>setListening(false);
+    recognition.onresult=(event:any)=>{ const command=event.results?.[0]?.[0]?.transcript||''; setText(command); routeCommand(command); };
+    recognition.start();
+  }
 
-    {view==="command" && <><section className="hero-grid"><div className="hero-copy"><p className="eyebrow">PERSONAL INTELLIGENCE // COMMAND SYSTEM</p><h1>Good day,<br/><span>Brandon.</span></h1><p className="subtitle">The dashboard is now connected to JARVIS routing and approval logic. Ask naturally; JARVIS identifies the correct division, tools and safety mode.</p><div className="hero-actions"><button onClick={()=>document.getElementById("jarvis-question")?.focus()}>Enter Command Center</button><button className="secondary" type="button">Voice Interface</button></div></div><NeuralCore/></section>
-      <form className="command-deck" onSubmit={submit}><div className="command-header"><div><span className="command-dot"/> ACTIVE INPUT</div><span>{loading?"PROCESSING":"ENCRYPTED SESSION"}</span></div><label htmlFor="jarvis-question">What should JARVIS handle?</label><div className="command-input-wrap"><textarea id="jarvis-question" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Analyze, plan, research or prepare an action..." rows={3}/><button type="submit" className="send-button" aria-label="Send command" disabled={loading}>{loading?"…":"➜"}</button></div><div className="quick-commands"><span>Try:</span>{["Review today's priorities","Find dinner deals","Check warehouse performance"].map(text=><button type="button" key={text} onClick={()=>setQuestion(text)}>{text}</button>)}</div></form>
-      {result&&<section className="jarvis-result"><div className="result-head"><span>{result.division}</span><b className={result.mode==="approval_required"?"warning":"safe"}>{result.mode.replaceAll("_"," ").toUpperCase()}</b></div><h2>Request understood</h2><p>{result.message}</p><div className="result-grid"><div><small>INTENT</small><strong>{result.intent.replaceAll("_"," ")}</strong></div><div><small>TOOLS</small><strong>{result.tools.join(", ")||"specialist router"}</strong></div></div>{result.mode==="approval_required"&&<button onClick={()=>setView("approvals")}>Review approval proposal</button>}</section>}
-      <section className="systems-section"><div className="sectionHeading"><div><p className="eyebrow">NEURAL NETWORK</p><h2>Connected divisions</h2></div><span>Five specialized systems. One intelligence.</span></div><div className="grid">{divisions.map(([number,title,description],index)=><article className="moduleCard" key={title} style={{"--delay":`${index*90}ms`} as React.CSSProperties}><div className="card-top"><span className="module-number">{number}</span><span className="module-status">ONLINE</span></div><div className="module-icon"><span/><span/><span/></div><h3>{title}</h3><p>{description}</p><button className="module-link" type="button" onClick={()=>{setQuestion(`Open ${title} and show me what needs attention.`);document.getElementById("jarvis-question")?.scrollIntoView({behavior:"smooth"});}}>OPEN SYSTEM <span>↗</span></button></article>)}</div></section></>}
-
-    {view==="approvals"&&<section className="workspace-panel"><p className="eyebrow">HUMAN AUTHORIZATION</p><h1>Approval Center</h1>{approvals?<article className="approval-card"><div><b>WAITING</b><span>{result?.division}</span></div><h2>{question}</h2><p>{result?.message}</p><div className="approval-actions"><button type="button">Approve exact proposal</button><button className="secondary" type="button">Reject</button></div><small>Approval expires when price, quantity, recipient, risk, timing or circumstances change.</small></article>:<div className="empty-state">No actions are waiting for approval.</div>}</section>}
-    {view==="tasks"&&<section className="workspace-panel"><p className="eyebrow">EXECUTION MAP</p><h1>Tasks</h1><div className="empty-state">Task extraction is connected to the conversation plan. Supabase persistence activates after environment credentials are configured.</div></section>}
-    {view==="memory"&&<section className="workspace-panel"><p className="eyebrow">SCOPED INTELLIGENCE</p><h1>Memory</h1><div className="memory-grid"><div><b>PRIVATE</b><span>Your personal preferences and decisions</span></div><div><b>HOUSEHOLD</b><span>Shared home routines and lists</span></div><div><b>WORK</b><span>Warehouse reports and operational context</span></div><div><b>BUSINESS</b><span>Projects, customers and opportunities</span></div></div></section>}
-
-    <section className="statusCard"><div><span className="status-icon">◈</span><p><strong>Approval Matrix</strong><small>Exact authorization for consequential actions</small></p><b>ARMED</b></div><div><span className="status-icon">◎</span><p><strong>Conversation Router</strong><small>Division, intent and tool planning connected</small></p><b>ONLINE</b></div><div><span className="status-icon">⌬</span><p><strong>Scoped Memory</strong><small>Supabase schema and security policies ready</small></p><b>READY</b></div><div><span className="status-icon">◇</span><p><strong>Privacy Layer</strong><small>Secrets remain server-side</small></p><b>ACTIVE</b></div></section>
+  return <main className="gateway-shell">
+    <div className="depth depth-one"/><div className="depth depth-two"/><div className="depth depth-three"/>
+    <nav className="gateway-nav"><span className="brand-orb"/>JARVIS <b>SYSTEM ONLINE</b></nav>
+    <section className="gateway-core">
+      <p className="eyebrow">VOICE-ROUTED INTELLIGENCE</p>
+      <h1>Ask once.<br/><span>Enter the right layer.</span></h1>
+      <p>JARVIS listens to the meaning of your request, chooses the correct intelligence division and opens only that deeper workspace.</p>
+      <button className={`voice-core ${listening?'listening':''}`} onClick={startVoice} aria-label="Start voice command"><span>◉</span><b>{listening?'LISTENING':'HOLD TO SPEAK'}</b><small>AI category detection</small></button>
+      <form onSubmit={e=>{e.preventDefault();routeCommand(text)}} className="gateway-input"><input value={text} onChange={e=>setText(e.target.value)} placeholder="Or type a request for JARVIS..."/><button>ROUTE</button></form>
+      {detected&&<div className="route-status">ROUTING TO JARVIS {detected.toUpperCase()}...</div>}
+    </section>
+    <section className="layer-preview"><p className="eyebrow">DEEPER SYSTEM LAYERS</p><div className="layer-grid">{categories.map(category=><Link key={category.key} href={`/${category.key}/`} className="layer-card" style={{'--accent':category.color} as React.CSSProperties}><span>{category.title}</span><small>{category.hint}</small><b>ENTER LAYER →</b></Link>)}</div></section>
+    <footer>Voice requests are classified by intent. Consequential actions still require approval.</footer>
     <style jsx global>{`
-      .workspace-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:7px;width:max-content;max-width:100%;overflow:auto;margin:0 auto 18px;padding:7px;border:1px solid var(--line);border-radius:999px;background:rgba(2,8,14,.82);backdrop-filter:blur(18px)}
-      .workspace-tabs button{padding:8px 13px;border:0;border-radius:999px;background:transparent;color:#7693a3;box-shadow:none;font-size:.62rem;letter-spacing:.12em;white-space:nowrap}.workspace-tabs button.active{background:rgba(88,246,255,.13);color:var(--cyan)}
-      .jarvis-result,.workspace-panel,.approval-card,.empty-state,.memory-grid>div{border:1px solid var(--line);background:linear-gradient(135deg,rgba(10,27,45,.86),rgba(4,11,20,.76));backdrop-filter:blur(18px)}
-      .jarvis-result{margin-top:16px;padding:22px;border-radius:18px}.result-head{display:flex;justify-content:space-between;gap:15px;color:var(--cyan);font-size:.68rem;letter-spacing:.12em}.result-head b{font-size:.58rem;padding:6px 9px;border-radius:999px}.result-head .safe{color:var(--mint);background:rgba(93,255,179,.08)}.result-head .warning{color:#ffd184;background:rgba(255,177,73,.1)}.jarvis-result h2{margin:18px 0 8px}.jarvis-result p{color:#9bb2bf;line-height:1.65}.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.result-grid div{padding:13px;border:1px solid rgba(88,246,255,.1);border-radius:12px;background:rgba(1,7,13,.45)}.result-grid small{display:block;color:#668392;font-size:.56rem;letter-spacing:.13em;margin-bottom:7px}.result-grid strong{font-size:.82rem;text-transform:capitalize}
-      .workspace-panel{min-height:520px;padding:clamp(22px,5vw,54px);border-radius:22px;margin:34px 0}.workspace-panel h1{font-size:clamp(3rem,9vw,6rem);margin-bottom:30px}.approval-card{padding:22px;border-radius:18px;max-width:760px}.approval-card>div:first-child{display:flex;justify-content:space-between;color:var(--cyan);font-size:.64rem;letter-spacing:.12em}.approval-card h2{font-size:1.4rem;line-height:1.35}.approval-card p,.approval-card small{color:#8fa7b4;line-height:1.6}.approval-actions{display:flex;gap:10px;margin:20px 0}.empty-state{padding:28px;border-radius:18px;color:#89a4b2}.memory-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.memory-grid>div{padding:22px;border-radius:16px}.memory-grid b{display:block;color:var(--cyan);font-size:.68rem;letter-spacing:.14em;margin-bottom:9px}.memory-grid span{color:#8fa7b4}
-      button:disabled{opacity:.55;cursor:wait}.statusCard{margin-bottom:20px}
-      @media(max-width:650px){.workspace-tabs{width:100%;justify-content:flex-start}.result-grid,.memory-grid{grid-template-columns:1fr}.approval-actions{flex-direction:column}.workspace-panel{min-height:430px;margin-top:18px}.workspace-panel h1{font-size:3.4rem}}
+      .gateway-shell{position:relative;min-height:100vh;overflow:hidden;padding:22px max(18px,5vw) 50px;background:#01050a;color:#eefbff}.depth{position:fixed;inset:-20%;pointer-events:none;border:1px solid rgba(88,246,255,.1);border-radius:50%;transform:perspective(900px) rotateX(72deg);box-shadow:0 0 90px rgba(88,246,255,.08),inset 0 0 70px rgba(88,246,255,.05)}.depth-one{top:8%;animation:depthPulse 7s infinite}.depth-two{top:24%;scale:.78;animation:depthPulse 9s infinite reverse}.depth-three{top:40%;scale:.58;animation:depthPulse 11s infinite}.gateway-nav{position:relative;z-index:4;display:flex;align-items:center;gap:10px;letter-spacing:.2em;font-weight:800}.gateway-nav b{margin-left:auto;color:#5dffb3;font-size:.62rem}.gateway-core{position:relative;z-index:3;max-width:900px;margin:8vh auto 0;text-align:center}.gateway-core h1{font-size:clamp(3rem,9vw,7.4rem);line-height:.88;margin:8px 0 20px}.gateway-core h1 span{color:transparent;-webkit-text-stroke:1px #8efaff}.gateway-core>p{max-width:720px;margin:0 auto;color:#90a9b7;line-height:1.7}.voice-core{width:190px;height:190px;margin:38px auto 22px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle,rgba(88,246,255,.3),rgba(5,20,32,.95) 58%);color:#dfffff;border:1px solid #58f6ff;box-shadow:0 0 45px rgba(88,246,255,.3),inset 0 0 35px rgba(88,246,255,.18)}.voice-core span{font-size:2.2rem}.voice-core small{color:#78a0ad}.voice-core.listening{animation:listenPulse 1s infinite}.gateway-input{display:flex;max-width:720px;margin:auto;border:1px solid rgba(88,246,255,.25);padding:7px;border-radius:16px;background:rgba(3,12,20,.88)}.gateway-input input{flex:1;border:0;background:transparent;color:white;padding:14px;outline:none}.route-status{margin-top:14px;color:#5dffb3;font-size:.72rem;letter-spacing:.13em}.layer-preview{position:relative;z-index:3;max-width:1100px;margin:90px auto 0}.layer-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.layer-card{--accent:#58f6ff;min-height:180px;padding:20px;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 10%,transparent),rgba(4,11,20,.82));border-radius:18px;text-decoration:none;color:white;display:flex;flex-direction:column;transition:.25s}.layer-card:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 20px 50px color-mix(in srgb,var(--accent) 15%,transparent)}.layer-card span{font-weight:800;color:var(--accent)}.layer-card small{color:#91a9b7;line-height:1.5;margin-top:14px}.layer-card b{margin-top:auto;font-size:.62rem;letter-spacing:.12em;color:var(--accent)}footer{position:relative;z-index:3;text-align:center;margin-top:35px;color:#64808f;font-size:.75rem}@keyframes depthPulse{50%{transform:perspective(900px) rotateX(72deg) translateZ(50px);opacity:.45}}@keyframes listenPulse{50%{scale:1.06;box-shadow:0 0 80px rgba(88,246,255,.65)}}@media(max-width:850px){.layer-grid{grid-template-columns:1fr 1fr}.layer-card:last-child{grid-column:1/-1}.gateway-core{margin-top:6vh}}@media(max-width:520px){.layer-grid{grid-template-columns:1fr}.layer-card:last-child{grid-column:auto}.gateway-input{flex-direction:column}.gateway-input button{width:100%}.voice-core{width:165px;height:165px}}
     `}</style>
   </main>;
 }
