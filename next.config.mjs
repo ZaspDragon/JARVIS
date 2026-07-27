@@ -1,12 +1,18 @@
 /** @type {import('next').NextConfig} */
+const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+
 const nextConfig = {
   output: "export",
-  basePath: "/JARVIS",
-  assetPrefix: "/JARVIS/",
   trailingSlash: true,
   images: {
     unoptimized: true,
   },
+  ...(isGitHubPages
+    ? {
+        basePath: "/JARVIS",
+        assetPrefix: "/JARVIS/",
+      }
+    : {}),
 };
 
 export default nextConfig;
