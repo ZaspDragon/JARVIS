@@ -1,0 +1,3 @@
+import { Suspense } from 'react';
+import JarvisLayer from '@/components/JarvisLayer';
+export default function Page(){return <Suspense><JarvisLayer name="Work" accent="#ffb347" description="A warehouse and leadership operations layer for productivity, inventory, reports, employee credit, variances, downtime and app health." tools={["Warehouse Files","Productivity Reconciliation","Inventory Intelligence","People & Leadership","Report Generator","App Health"]} examples={["Reconcile today’s productivity","Who is missing credit for their work?","Show the biggest warehouse risks today"]}/></Suspense>}
