@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./workspaces.css";
+import "./neural-core.css";
 
 export const metadata: Metadata = {
   title: "JARVIS",
