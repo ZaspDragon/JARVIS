@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+const isGitHubPages = process.env.JARVIS_DEPLOY_TARGET === "github-pages";
 
 const nextConfig = {
   output: "export",
