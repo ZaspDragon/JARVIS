@@ -1,0 +1,55 @@
+{
+  "name": "JARVIS Master Router",
+  "nodes": [
+    {
+      "parameters": { "path": "jarvis-router", "httpMethod": "POST", "responseMode": "responseNode" },
+      "id": "webhook",
+      "name": "JARVIS Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json; const text = String(body.message ?? '').toLowerCase(); const scope = /warehouse|employee|cycle count|putaway/.test(text) ? 'work' : /recipe|grocery|home|bill|family/.test(text) ? 'home' : /trade|market|fitness|hobby/.test(text) ? 'hobby' : /business|customer|revenue|profit/.test(text) ? 'business' : 'fact'; const consequential = /buy|purchase|send|email|deploy|merge|delete|trade|order|change|cancel|close/.test(text); return [{json:{...body,scope,executionMode:consequential?'approval_required':'read_only',idempotencyKey:body.idempotencyKey ?? `${Date.now()}-${scope}`}}];"
+      },
+      "id": "classify",
+      "name": "Classify Scope and Safety",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "rules": { "values": [
+          { "conditions": { "conditions": [{ "leftValue": "={{$json.scope}}", "rightValue": "work", "operator": { "type": "string", "operation": "equals" } }] }, "renameOutput": true, "outputKey": "work" },
+          { "conditions": { "conditions": [{ "leftValue": "={{$json.scope}}", "rightValue": "home", "operator": { "type": "string", "operation": "equals" } }] }, "renameOutput": true, "outputKey": "home" },
+          { "conditions": { "conditions": [{ "leftValue": "={{$json.scope}}", "rightValue": "hobby", "operator": { "type": "string", "operation": "equals" } }] }, "renameOutput": true, "outputKey": "hobby" },
+          { "conditions": { "conditions": [{ "leftValue": "={{$json.scope}}", "rightValue": "business", "operator": { "type": "string", "operation": "equals" } }] }, "renameOutput": true, "outputKey": "business" }
+        ] },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "route",
+      "name": "Route Division",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [500, 0]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{$json}}" },
+      "id": "respond",
+      "name": "Return Plan",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [760, 0]
+    }
+  ],
+  "connections": {
+    "JARVIS Webhook": { "main": [[{ "node": "Classify Scope and Safety", "type": "main", "index": 0 }]] },
+    "Classify Scope and Safety": { "main": [[{ "node": "Route Division", "type": "main", "index": 0 }]] },
+    "Route Division": { "main": [[{ "node": "Return Plan", "type": "main", "index": 0 }],[{ "node": "Return Plan", "type": "main", "index": 0 }],[{ "node": "Return Plan", "type": "main", "index": 0 }],[{ "node": "Return Plan", "type": "main", "index": 0 }],[{ "node": "Return Plan", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "none" },
+  "active": false,
+  "versionId": "jarvis-master-router-v1"
+}
